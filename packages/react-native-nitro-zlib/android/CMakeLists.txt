@@ -9,6 +9,7 @@ set (CMAKE_CXX_STANDARD 20)
 add_library(${PACKAGE_NAME} SHARED
         src/main/cpp/cpp-adapter.cpp
         ../cpp/HybridZlib.cpp
+        ../cpp/HybridZlibStream.cpp
 )
 
 # Add Nitrogen specs :)

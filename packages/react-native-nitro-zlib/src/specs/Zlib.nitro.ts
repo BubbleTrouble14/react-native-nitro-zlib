@@ -29,3 +29,19 @@ export interface Zlib extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   gzip(data: ArrayBuffer, level?: CompressionLevel): ArrayBuffer
   gunzip(data: ArrayBuffer): ArrayBuffer
 }
+
+export interface ZlibStream
+  extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
+  write(chunk: ArrayBuffer): boolean
+  end(): void
+  flush(kind?: number): void
+
+  onData(callback: (chunk: ArrayBuffer) => void): void
+  onEnd(callback: () => void): void
+  onError(callback: (error: Error) => void): void
+
+  params(level: number, strategy: number): void
+  reset(): void
+
+  getMemorySize(): number
+}

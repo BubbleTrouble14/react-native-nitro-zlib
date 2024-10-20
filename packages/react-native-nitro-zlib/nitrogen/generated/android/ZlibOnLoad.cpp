@@ -12,6 +12,7 @@
 #include <NitroModules/HybridObjectRegistry.hpp>
 
 #include "HybridZlib.hpp"
+#include "HybridZlibStream.hpp"
 
 namespace margelo::nitro::rnzlib {
 
@@ -32,6 +33,15 @@ int initialize(JavaVM* vm) {
                       "The HybridObject \"HybridZlib\" is not default-constructible! "
                       "Create a public constructor that takes zero arguments to be able to autolink this HybridObject.");
         return std::make_shared<HybridZlib>();
+      }
+    );
+    HybridObjectRegistry::registerHybridObjectConstructor(
+      "ZlibStream",
+      []() -> std::shared_ptr<HybridObject> {
+        static_assert(std::is_default_constructible_v<HybridZlibStream>,
+                      "The HybridObject \"HybridZlibStream\" is not default-constructible! "
+                      "Create a public constructor that takes zero arguments to be able to autolink this HybridObject.");
+        return std::make_shared<HybridZlibStream>();
       }
     );
   });

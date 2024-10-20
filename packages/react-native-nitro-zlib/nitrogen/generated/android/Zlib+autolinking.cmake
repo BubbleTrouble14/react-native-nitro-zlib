@@ -28,6 +28,7 @@ target_sources(
   ../nitrogen/generated/android/ZlibOnLoad.cpp
   # Shared Nitrogen C++ sources
   ../nitrogen/generated/shared/c++/HybridZlibSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridZlibStreamSpec.cpp
   # Android-specific Nitrogen C++ sources
   
 )

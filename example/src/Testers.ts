@@ -90,6 +90,17 @@ export class State<T> {
     }
     return this
   }
+
+  custom(predicate: (result: T) => boolean): State<T> {
+    if (this.result === undefined) {
+      this.onFailed('Cannot run custom predicate on undefined result')
+    } else if (!predicate(this.result)) {
+      this.onFailed('Custom predicate failed')
+    } else {
+      this.onPassed()
+    }
+    return this
+  }
 }
 
 export function it<T>(action: () => Promise<T>): Promise<State<T>>

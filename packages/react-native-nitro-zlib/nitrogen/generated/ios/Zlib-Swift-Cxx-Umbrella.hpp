@@ -10,15 +10,22 @@
 // Forward declarations of C++ defined types
 // Forward declaration of `ArrayBuffer` to properly resolve imports.
 namespace NitroModules { class ArrayBuffer; }
+// Forward declaration of `Error` to properly resolve imports.
+namespace margelo::nitro::rnzlib { struct Error; }
 // Forward declaration of `FlushMode` to properly resolve imports.
 namespace margelo::nitro::rnzlib { enum class FlushMode; }
 // Forward declaration of `HybridZlibSpec` to properly resolve imports.
 namespace margelo::nitro::rnzlib { class HybridZlibSpec; }
+// Forward declaration of `HybridZlibStreamSpec` to properly resolve imports.
+namespace margelo::nitro::rnzlib { class HybridZlibStreamSpec; }
 
 // Include C++ defined types
+#include "Error.hpp"
 #include "FlushMode.hpp"
 #include "HybridZlibSpec.hpp"
+#include "HybridZlibStreamSpec.hpp"
 #include <NitroModules/ArrayBuffer.hpp>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -35,6 +42,8 @@ namespace margelo::nitro::rnzlib { class HybridZlibSpec; }
 // Forward declarations of Swift defined types
 // Forward declaration of `HybridZlibSpecCxx` to properly resolve imports.
 namespace Zlib { class HybridZlibSpecCxx; }
+// Forward declaration of `HybridZlibStreamSpecCxx` to properly resolve imports.
+namespace Zlib { class HybridZlibStreamSpecCxx; }
 
 // Include Swift defined types
 #if __has_include("Zlib-Swift.h")

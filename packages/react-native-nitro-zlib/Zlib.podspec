@@ -24,9 +24,7 @@ Pod::Spec.new do |s|
     "zlib_cpp/include/*.{h}"
   ]
 
-  s.dependency "OpenSSL-Universal"
-
-  s.vendored_frameworks = "ios/Clibutf8proc.xcframework"
+  s.vendored_frameworks = "ios/Clibz.xcframework"
 
   load 'nitrogen/generated/ios/Zlib+autolinking.rb'
   add_nitrogen_files(s)

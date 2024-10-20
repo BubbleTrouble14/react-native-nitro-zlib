@@ -16,6 +16,8 @@ namespace margelo::nitro::rnzlib
         std::function<int(z_stream *, int)> zlibInit,
         int windowBits)
     {
+        Logger::log(LogLevel::Debug, "HybridZlib", "processZlib started: input size = %zu bytes", data->size());
+
         z_stream strm;
         strm.zalloc = Z_NULL;
         strm.zfree = Z_NULL;
@@ -26,11 +28,15 @@ namespace margelo::nitro::rnzlib
         int ret = zlibInit(&strm, windowBits);
         if (ret != Z_OK)
         {
+            Logger::log(LogLevel::Error, "HybridZlib", "Failed to initialize zlib function: ret = %d", ret);
             throw std::runtime_error("Failed to initialize zlib function");
         }
 
         std::vector<unsigned char> buffer;
-        const size_t CHUNK = 16384;
+        const size_t INITIAL_CHUNK = 256 * 1024; // Start with a larger initial chunk (256KB)
+        size_t CHUNK = INITIAL_CHUNK;
+        int iterations = 0;
+        const int MAX_ITERATIONS = 1000;
 
         do
         {
@@ -39,21 +45,44 @@ namespace margelo::nitro::rnzlib
             strm.next_out = buffer.data() + buffer.size() - CHUNK;
 
             ret = zlibFunc(&strm, Z_FINISH);
+            Logger::log(LogLevel::Debug, "HybridZlib", "Zlib iteration %d: avail_in = %u, avail_out = %u, ret = %d",
+                        iterations, strm.avail_in, strm.avail_out, ret);
+
+            if (ret == Z_BUF_ERROR)
+            {
+                // Instead of throwing an error, increase the buffer size and continue
+                CHUNK *= 2; // Double the chunk size
+                Logger::log(LogLevel::Warning, "HybridZlib", "Z_BUF_ERROR: Increasing chunk size to %zu bytes", CHUNK);
+                continue;
+            }
+
             if (ret == Z_STREAM_ERROR)
             {
                 deflateEnd(&strm);
+                Logger::log(LogLevel::Error, "HybridZlib", "Z_STREAM_ERROR in zlib function");
                 throw std::runtime_error("Z_STREAM_ERROR in zlib function");
             }
 
             if (ret != Z_STREAM_END && ret != Z_OK)
             {
                 deflateEnd(&strm);
+                Logger::log(LogLevel::Error, "HybridZlib", "Error in zlib function: %d", ret);
                 throw std::runtime_error("Error in zlib function: " + std::to_string(ret));
             }
-        } while (strm.avail_out == 0);
+
+            iterations++;
+            if (iterations > MAX_ITERATIONS)
+            {
+                deflateEnd(&strm);
+                Logger::log(LogLevel::Error, "HybridZlib", "Maximum iteration count exceeded");
+                throw std::runtime_error("Maximum iteration count exceeded");
+            }
+        } while (ret != Z_STREAM_END);
 
         buffer.resize(buffer.size() - strm.avail_out);
         deflateEnd(&strm);
+
+        Logger::log(LogLevel::Debug, "HybridZlib", "processZlib completed: output size = %zu bytes", buffer.size());
 
         uint8_t *bufferData = new uint8_t[buffer.size()];
         std::memcpy(bufferData, buffer.data(), buffer.size());

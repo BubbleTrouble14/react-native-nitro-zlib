@@ -1,27 +1,4 @@
 PODS:
-  - Zlib (0.0.1):
-    - DoubleConversion
-    - glog
-    - hermes-engine
-    - NitroModules
-    - OpenSSL-Universal
-    - RCT-Folly (= 2024.01.01.00)
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - Yoga
   - boost (1.84.0)
   - DoubleConversion (1.1.6)
   - FBLazyVector (0.75.4)
@@ -51,7 +28,6 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - OpenSSL-Universal (3.3.2000)
   - RCT-Folly (2024.01.01.00):
     - boost
     - DoubleConversion
@@ -1612,9 +1588,30 @@ PODS:
     - React-utils (= 0.75.4)
   - SocketRocket (0.7.0)
   - Yoga (0.0.0)
+  - Zlib (0.0.4):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - NitroModules
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
 
 DEPENDENCIES:
-  - Zlib (from `../../node_modules/react-native-nitro-zlib`)
   - boost (from `../../node_modules/react-native/third-party-podspecs/boost.podspec`)
   - DoubleConversion (from `../../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
   - FBLazyVector (from `../../node_modules/react-native/Libraries/FBLazyVector`)
@@ -1682,15 +1679,13 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../../node_modules/react-native/ReactCommon`)
   - Yoga (from `../../node_modules/react-native/ReactCommon/yoga`)
+  - Zlib (from `../../node_modules/react-native-nitro-zlib`)
 
 SPEC REPOS:
   trunk:
-    - OpenSSL-Universal
     - SocketRocket
 
 EXTERNAL SOURCES:
-  Zlib:
-    :path: "../../node_modules/react-native-nitro-zlib"
   boost:
     :podspec: "../../node_modules/react-native/third-party-podspecs/boost.podspec"
   DoubleConversion:
@@ -1822,9 +1817,10 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/react-native/ReactCommon"
   Yoga:
     :path: "../../node_modules/react-native/ReactCommon/yoga"
+  Zlib:
+    :path: "../../node_modules/react-native-nitro-zlib"
 
 SPEC CHECKSUMS:
-  Zlib: abf590be3656f2d1b3bf2ca0c63adff0b0a2f4de
   boost: 4cb898d0bf20404aab1850c656dcea009429d6c1
   DoubleConversion: 76ab83afb40bddeeee456813d9c04f67f78771b5
   FBLazyVector: 430e10366de01d1e3d57374500b1b150fe482e6d
@@ -1832,7 +1828,6 @@ SPEC CHECKSUMS:
   glog: 69ef571f3de08433d766d614c73a9838a06bf7eb
   hermes-engine: ea92f60f37dba025e293cbe4b4a548fd26b610a0
   NitroModules: e8722903c6ca5c7616f62c0d7a926a903ae75bce
-  OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
   RCT-Folly: 4464f4d875961fce86008d45f4ecf6cef6de0740
   RCTDeprecation: 726d24248aeab6d7180dac71a936bbca6a994ed1
   RCTRequired: a94e7febda6db0345d207e854323c37e3a31d93b
@@ -1892,6 +1887,7 @@ SPEC CHECKSUMS:
   ReactCommon: 6a952e50c2a4b694731d7682aaa6c79bc156e4ad
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
   Yoga: 055f92ad73f8c8600a93f0e25ac0b2344c3b07e6
+  Zlib: 49c6d470a646a95fbed79aed4c663a67028cfca7
 
 PODFILE CHECKSUM: bd3f52fb9dca02f373eb874756f56fe0737bf773
 
