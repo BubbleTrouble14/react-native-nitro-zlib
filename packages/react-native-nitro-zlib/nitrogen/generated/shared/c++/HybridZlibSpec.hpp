@@ -17,11 +17,15 @@
 namespace NitroModules { class ArrayBuffer; }
 // Forward declaration of `FlushMode` to properly resolve imports.
 namespace margelo::nitro::rnzlib { enum class FlushMode; }
+// Forward declaration of `HybridZlibStreamSpec` to properly resolve imports.
+namespace margelo::nitro::rnzlib { class HybridZlibStreamSpec; }
 
 #include <string>
 #include <NitroModules/ArrayBuffer.hpp>
 #include <optional>
 #include "FlushMode.hpp"
+#include <memory>
+#include "HybridZlibStreamSpec.hpp"
 
 namespace margelo::nitro::rnzlib {
 
@@ -61,6 +65,8 @@ namespace margelo::nitro::rnzlib {
       virtual std::shared_ptr<ArrayBuffer> deflateRaw(const std::shared_ptr<ArrayBuffer>& data, std::optional<double> level, std::optional<FlushMode> flush) = 0;
       virtual std::shared_ptr<ArrayBuffer> gzip(const std::shared_ptr<ArrayBuffer>& data, std::optional<double> level) = 0;
       virtual std::shared_ptr<ArrayBuffer> gunzip(const std::shared_ptr<ArrayBuffer>& data) = 0;
+      virtual std::shared_ptr<margelo::nitro::rnzlib::HybridZlibStreamSpec> createDeflateStream(std::optional<double> level, std::optional<double> strategy) = 0;
+      virtual std::shared_ptr<margelo::nitro::rnzlib::HybridZlibStreamSpec> createInflateStream() = 0;
 
     protected:
       // Hybrid Setup

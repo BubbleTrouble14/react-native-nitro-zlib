@@ -7,13 +7,15 @@ namespace margelo::nitro::rnzlib
 {
 
     HybridZlibStream::HybridZlibStream()
-        : HybridZlibStreamSpec(), _zstream(nullptr), _deflate(true), _initialized(false)
+        : HybridObject(TAG), _zstream(nullptr), _deflate(true), _initialized(false), _outBuffer(CHUNK_SIZE)
     {
+        Logger::log(LogLevel::Debug, TAG, "HybridZlibStream default constructor called");
     }
 
     HybridZlibStream::HybridZlibStream(int level, bool deflate)
-        : HybridZlibStreamSpec(), _deflate(deflate), _initialized(false)
+        : HybridObject(TAG), _zstream(nullptr), _deflate(deflate), _initialized(false), _outBuffer(CHUNK_SIZE)
     {
+        Logger::log(LogLevel::Debug, TAG, "HybridZlibStream parameterized constructor called with level %d, deflate %d", level, deflate);
         initStream(level, deflate);
     }
 

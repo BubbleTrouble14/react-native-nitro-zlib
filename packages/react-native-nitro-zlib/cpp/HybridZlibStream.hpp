@@ -35,11 +35,12 @@ namespace margelo::nitro::rnzlib
         std::unique_ptr<z_stream> _zstream;
         bool _deflate;
         bool _initialized;
+        std::vector<uint8_t> _outBuffer;
         std::function<void(const std::shared_ptr<ArrayBuffer> &chunk)> _dataCallback;
         std::function<void()> _endCallback;
         std::function<void(const Error &error)> _errorCallback;
 
-        static constexpr auto TAG = "HybridZlibStream";
+        static constexpr size_t CHUNK_SIZE = 16384; // 16KB
     };
 
 } // namespace margelo::nitro::rnzlib

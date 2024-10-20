@@ -11,6 +11,22 @@ export type FlushMode =
   | 'BLOCK'
   | 'TREES'
 
+export interface ZlibStream
+  extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
+  write(chunk: ArrayBuffer): boolean
+  end(): void
+  flush(kind?: number): void
+
+  onData(callback: (chunk: ArrayBuffer) => void): void
+  onEnd(callback: () => void): void
+  onError(callback: (error: Error) => void): void
+
+  params(level: number, strategy: number): void
+  reset(): void
+
+  getMemorySize(): number
+}
+
 export interface Zlib extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   readonly version: string
   inflate(data: ArrayBuffer, flush?: FlushMode): ArrayBuffer
@@ -28,20 +44,6 @@ export interface Zlib extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   ): ArrayBuffer
   gzip(data: ArrayBuffer, level?: CompressionLevel): ArrayBuffer
   gunzip(data: ArrayBuffer): ArrayBuffer
-}
-
-export interface ZlibStream
-  extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
-  write(chunk: ArrayBuffer): boolean
-  end(): void
-  flush(kind?: number): void
-
-  onData(callback: (chunk: ArrayBuffer) => void): void
-  onEnd(callback: () => void): void
-  onError(callback: (error: Error) => void): void
-
-  params(level: number, strategy: number): void
-  reset(): void
-
-  getMemorySize(): number
+  createDeflateStream(level?: CompressionLevel, strategy?: number): ZlibStream
+  createInflateStream(): ZlibStream
 }

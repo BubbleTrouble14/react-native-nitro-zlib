@@ -26,6 +26,9 @@ namespace margelo::nitro::rnzlib
         std::shared_ptr<ArrayBuffer> gzip(const std::shared_ptr<ArrayBuffer> &data, std::optional<double> level) override;
         std::shared_ptr<ArrayBuffer> gunzip(const std::shared_ptr<ArrayBuffer> &data) override;
 
+        std::shared_ptr<margelo::nitro::rnzlib::HybridZlibStreamSpec> createDeflateStream(std::optional<double> level, std::optional<double> strategy) override;
+        std::shared_ptr<margelo::nitro::rnzlib::HybridZlibStreamSpec> createInflateStream() override;
+
     private:
         // Helper functions
         std::shared_ptr<ArrayBuffer> processZlib(const std::shared_ptr<ArrayBuffer> &data, int (*zlibFunc)(z_stream *, int), std::function<int(z_stream *, int)> zlibInit, int windowBits);

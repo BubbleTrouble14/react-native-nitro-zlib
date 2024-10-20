@@ -22,6 +22,8 @@ namespace margelo::nitro::rnzlib {
       prototype.registerHybridMethod("deflateRaw", &HybridZlibSpec::deflateRaw);
       prototype.registerHybridMethod("gzip", &HybridZlibSpec::gzip);
       prototype.registerHybridMethod("gunzip", &HybridZlibSpec::gunzip);
+      prototype.registerHybridMethod("createDeflateStream", &HybridZlibSpec::createDeflateStream);
+      prototype.registerHybridMethod("createInflateStream", &HybridZlibSpec::createInflateStream);
     });
   }
 

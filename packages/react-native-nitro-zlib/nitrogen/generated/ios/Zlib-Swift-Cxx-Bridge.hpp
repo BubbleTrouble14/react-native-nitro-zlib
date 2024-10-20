@@ -50,14 +50,6 @@ namespace margelo::nitro::rnzlib { enum class FlushMode; }
 namespace margelo::nitro::rnzlib::bridge::swift {
 
   /**
-   * Specialized version of `std::optional<FlushMode>`.
-   */
-  using std__optional_FlushMode_ = std::optional<FlushMode>;
-  inline std::optional<FlushMode> create_std__optional_FlushMode_(const FlushMode& value) {
-    return std::optional<FlushMode>(value);
-  }
-  
-  /**
    * Specialized version of `std::optional<double>`.
    */
   using std__optional_double_ = std::optional<double>;
@@ -155,6 +147,14 @@ namespace margelo::nitro::rnzlib::bridge::swift {
   }
   inline std::shared_ptr<Func_void_Error_Wrapper> share_Func_void_Error(const Func_void_Error& value) {
     return std::make_shared<Func_void_Error_Wrapper>(value);
+  }
+  
+  /**
+   * Specialized version of `std::optional<FlushMode>`.
+   */
+  using std__optional_FlushMode_ = std::optional<FlushMode>;
+  inline std::optional<FlushMode> create_std__optional_FlushMode_(const FlushMode& value) {
+    return std::optional<FlushMode>(value);
   }
 
 } // namespace margelo::nitro::rnzlib::bridge::swift

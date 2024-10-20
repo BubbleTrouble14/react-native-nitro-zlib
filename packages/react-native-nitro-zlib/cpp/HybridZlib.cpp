@@ -2,6 +2,7 @@
 #include <NitroModules/NitroLogger.hpp>
 #include <stdexcept>
 #include <vector>
+#include "HybridZlibStream.hpp"
 
 namespace margelo::nitro::rnzlib
 {
@@ -134,6 +135,23 @@ namespace margelo::nitro::rnzlib
         int compressionLevel = level.has_value() ? static_cast<int>(level.value()) : Z_DEFAULT_COMPRESSION;
         return processZlib(data, ::deflate, [compressionLevel](z_streamp strm, int windowBits)
                            { return deflateInit(strm, compressionLevel); }, 15);
+    }
+
+    std::shared_ptr<margelo::nitro::rnzlib::HybridZlibStreamSpec> HybridZlib::createDeflateStream(std::optional<double> level, std::optional<double> strategy)
+    {
+        int compressionLevel = level.has_value() ? static_cast<int>(level.value()) : Z_DEFAULT_COMPRESSION;
+        int compressionStrategy = strategy.has_value() ? static_cast<int>(strategy.value()) : Z_DEFAULT_STRATEGY;
+
+        Logger::log(LogLevel::Debug, "HybridZlib", "Creating deflate stream: level = %d, strategy = %d", compressionLevel, compressionStrategy);
+
+        return std::make_shared<HybridZlibStream>(compressionLevel, true);
+    }
+
+    std::shared_ptr<margelo::nitro::rnzlib::HybridZlibStreamSpec> HybridZlib::createInflateStream()
+    {
+        Logger::log(LogLevel::Debug, "HybridZlib", "Creating inflate stream");
+
+        return std::make_shared<HybridZlibStream>(Z_DEFAULT_COMPRESSION, false);
     }
 
 } // namespace margelo::nitro::rnzlib
