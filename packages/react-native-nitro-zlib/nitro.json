@@ -1,0 +1,16 @@
+{
+  "cxxNamespace": ["rnzlib"],
+  "ios": {
+    "iosModulename": "Zlib"
+  },
+  "android": {
+    "androidNamespace": ["zlib"],
+    "androidCxxLibName": "Zlib"
+  },
+  "autolinking": {
+    "Zlib": {
+      "cpp": "HybridZlib"
+    }
+  },
+  "ignorePaths": ["node_modules"]
+}
