@@ -1,12 +1,8 @@
-# React Native Zlib
+Certainly! Here's the raw markdown for you to copy directly into a .md file:
 
-React Native implementation of [Bitcoin BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki). It's written in TypeScript and has direct bindings to a Zlib C++ library. The primary function of this implementation is to provide mnemonic code for generating deterministic keys.
+# React Native Nitro Zlib
 
-- 🏎️ Up to 800x faster then js solutions (mnemonicToSeed)
-- ⚡️ Lightning fast implementation with pure C++ and JSI
-- 📚 Standalone library
-- 🧪 Tested in JS and C++ (OpenSSL)
-- 💳 Made for crypto wallets
+React Native implementation of Zlib compression library. It's written in TypeScript and has direct bindings to a Zlib C++ library. The primary function of this implementation is to provide fast and efficient compression and decompression capabilities.
 
 ## Installation
 
@@ -30,138 +26,151 @@ bun install react-native-nitro-zlib
 ```typescript
 import { zlib } from "react-native-nitro-zlib";
 
-zlib.setDefaultWordlist("english");
-console.log(zlib.getDefaultWordlist());
+// Compression
+const data = new TextEncoder().encode("Hello, World!");
+const compressed = zlib.deflate(data.buffer);
+console.log("Compressed data:", compressed);
 
-const mnemonic = zlib.generateMnemonic(12);
-console.log(mnemonic); // Outputs a 12-word mnemonic
-console.log(zlib.validateMnemonic(mnemonic));
-console.log(zlib.mnemonicToSeed(mnemonic));
-console.log(zlib.mnemonicToSeedHex(mnemonic));
-const entropy = zlib.mnemonicToEntropy(mnemonic);
-console.log(entropy);
-console.log(zlib.entropyToMnemonic(entropy));
+// Decompression
+const decompressed = zlib.inflate(compressed);
+console.log("Decompressed data:", new TextDecoder().decode(decompressed));
+
+// Using streams
+const deflateStream = zlib.createDeflateStream();
+deflateStream.onData((chunk) => console.log("Received chunk:", chunk));
+deflateStream.onEnd(() => console.log("Stream ended"));
+deflateStream.write(data.buffer);
+deflateStream.end();
 ```
 
 ## Documentation
 
-### setDefaultWordlist
+### Zlib Interface
 
 ```typescript
-setDefaultWordlist(wordlist: WordLists): void
+interface Zlib {
+  readonly version: string;
+  inflate(data: ArrayBuffer, flush?: FlushMode): ArrayBuffer;
+  inflateRaw(data: ArrayBuffer, flush?: FlushMode): ArrayBuffer;
+  compress(data: ArrayBuffer, level?: CompressionLevel): ArrayBuffer;
+  deflate(data: ArrayBuffer, level?: CompressionLevel, flush?: FlushMode): ArrayBuffer;
+  deflateRaw(data: ArrayBuffer, level?: CompressionLevel, flush?: FlushMode): ArrayBuffer;
+  gzip(data: ArrayBuffer, level?: CompressionLevel): ArrayBuffer;
+  gunzip(data: ArrayBuffer): ArrayBuffer;
+  createDeflateStream(level?: CompressionLevel, strategy?: number): ZlibStream;
+  createInflateStream(): ZlibStream;
+}
 ```
 
-- **Parameters:**
-  - `wordlist` The word list to use (e.g., 'chinese_simplified', 'english', etc.). Default is 'english'.
-
-### getDefaultWordlist
+### ZlibStream Interface
 
 ```typescript
-getDefaultWordlist(): WordLists
+interface ZlibStream {
+  write(chunk: ArrayBuffer): boolean;
+  end(): void;
+  flush(kind?: number): void;
+  onData(callback: (chunk: ArrayBuffer) => void): void;
+  onEnd(callback: () => void): void;
+  onError(callback: (error: Error) => void): void;
+  params(level: number, strategy: number): void;
+  reset(): void;
+  getMemorySize(): number;
+}
 ```
 
-- **Returns:** The word list to use (e.g., 'chinese_simplified', 'english', etc.). Default is 'english'.
-
-### generateMnemonic
+### Types
 
 ```typescript
-generateMnemonic(wordCount?: WordCount, rng?: ArrayBuffer, wordlist?: WordLists): string
+type CompressionLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+type FlushMode =
+  | 'NO_FLUSH'
+  | 'PARTIAL_FLUSH'
+  | 'SYNC_FLUSH'
+  | 'FULL_FLUSH'
+  | 'FINISH'
+  | 'BLOCK'
+  | 'TREES';
 ```
 
-- **Parameters:**
-  - `wordCount` (optional): Number of words in the mnemonic (e.g., 12, 15, 18, 21, or 24). Default is 12.
-  - `rng` (optional): A random number generator represented as a `ArrayBuffer`.
-  - `wordlist` (optional): The word list to use (e.g., 'chinese_simplified', 'english', etc.). Default is 'english'.
-- **Returns:** A string representing the generated mnemonic.
+## Methods
 
-### validateMnemonic
+### inflate(data: ArrayBuffer, flush?: FlushMode): ArrayBuffer
 
-```typescript
-validateMnemonic(mnemonic: string, wordlist?: WordLists): boolean
-```
+Decompresses the given data.
 
-- **Parameters:**
-  - `mnemonic`: The mnemonic phrase to validate.
-  - `wordlist` (optional): The word list to use (e.g., 'chinese_simplified', 'english', etc.). Default is 'english'.
-- **Returns:** A boolean indicating whether the mnemonic is valid.
+### inflateRaw(data: ArrayBuffer, flush?: FlushMode): ArrayBuffer
 
-### mnemonicToSeed
+Decompresses raw deflate data.
 
-```typescript
-mnemonicToSeed(mnemonic: string, password?: string): ArrayBuffer
-```
+### compress(data: ArrayBuffer, level?: CompressionLevel): ArrayBuffer
 
-- **Parameters:**
-  - `mnemonic`: The mnemonic phrase to convert.
-  - `password` (optional): An optional passphrase for additional security.
-- **Returns:** A `ArrayBuffer` representing the binary seed.
+Compresses the given data.
 
-### mnemonicToSeedHex
+### deflate(data: ArrayBuffer, level?: CompressionLevel, flush?: FlushMode): ArrayBuffer
 
-```typescript
-mnemonicToSeedHex(mnemonic: string, password?: string): string
-```
+Compresses the given data using the deflate algorithm.
 
-- **Parameters:**
-  - `mnemonic`: The mnemonic phrase to convert.
-  - `password` (optional): An optional passphrase for additional security.
-- **Returns:** A string representing the hexadecimal seed.
+### deflateRaw(data: ArrayBuffer, level?: CompressionLevel, flush?: FlushMode): ArrayBuffer
 
-### mnemonicToEntropy
+Compresses the given data using the raw deflate algorithm.
 
-```typescript
-mnemonicToEntropy(mnemonic: string, wordlist?: WordLists): string
-```
+### gzip(data: ArrayBuffer, level?: CompressionLevel): ArrayBuffer
 
-- **Parameters:**
-  - `mnemonic`: The mnemonic phrase to convert.
-  - `wordlist` (optional): The word list to use (e.g., 'chinese_simplified', 'english', etc.). Default is 'english'.
-- **Returns:** A string representing the binary entropy.
+Compresses the given data using the gzip format.
 
-### entropyToMnemonic
+### gunzip(data: ArrayBuffer): ArrayBuffer
 
-```typescript
-entropyToMnemonic(entropy: string | ArrayBuffer, wordlist?: WordLists): string
-```
+Decompresses gzip data.
 
-- **Parameters:**
-  - `entropy`: The binary entropy to convert.
-  - `wordlist` (optional): The word list to use (e.g., 'chinese_simplified', 'english', etc.). Default is 'english'.
-- **Returns:** A string representing the mnemonic phrase.
+### createDeflateStream(level?: CompressionLevel, strategy?: number): ZlibStream
 
-### WordLists
+Creates a new deflate stream.
 
-A type representing different word lists that can be used for generating or validating mnemonics.
+### createInflateStream(): ZlibStream
 
-```typescript
-type WordLists =
-  | "chinese_simplified"
-  | "chinese_traditional"
-  | "czech"
-  | "english"
-  | "french"
-  | "italian"
-  | "japanese"
-  | "korean"
-  | "portuguese"
-  | "spanish";
-```
+Creates a new inflate stream.
 
-### WordCount
+## ZlibStream Methods
 
-A type representing the number of words in a mnemonic.
+### write(chunk: ArrayBuffer): boolean
 
-```typescript
-type WordCount = 12 | 15 | 18 | 21 | 24;
-```
+Writes a chunk of data to the stream.
 
-## Tests
+### end(): void
 
-All test cases have been sourced from the [Python](https://github.com/trezor/python-mnemonic/blob/master/vectors.json) and [JavaScript](https://github.com/bitcoinjs/zlib/blob/master/test/index.js) implementations of BIP39. They have been subsequently adapted to be compatible with React Native.
+Ends the stream.
+
+### flush(kind?: number): void
+
+Flushes the stream.
+
+### onData(callback: (chunk: ArrayBuffer) => void): void
+
+Sets a callback to be called when data is available.
+
+### onEnd(callback: () => void): void
+
+Sets a callback to be called when the stream ends.
+
+### onError(callback: (error: Error) => void): void
+
+Sets a callback to be called when an error occurs.
+
+### params(level: number, strategy: number): void
+
+Updates the compression parameters.
+
+### reset(): void
+
+Resets the stream.
+
+### getMemorySize(): number
+
+Returns the current memory usage of the stream.
 
 ## Resources
 
-- [mrousavy/nitro](https://nitro.margelo.coma/) Nitro Modules
-- [mattxlee/zlib_cpp](https://github.com/mattxlee/zlib_cpp) C++ Zlib library
+- [mrousavy/nitro](https://nitro.margelo.com/) Nitro Modules
+- [zlib](https://zlib.net/) Zlib compression library
 - [margelo/react-native-worklets-core](https://github.com/margelo/react-native-worklets-core) Helpful for how JSI works
-- [bitcoinjs/zlib](https://github.com/bitcoinjs/zlib/tree/master) Mostly used as zlib reference
