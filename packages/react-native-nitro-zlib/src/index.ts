@@ -4,6 +4,6 @@ import type { Zlib, ZlibStream } from './specs/Zlib.nitro'
 
 export * from './specs/Zlib.nitro'
 
-export const zlib = NitroModules.createHybridObject<Zlib>('Zlib')
 export const zlibStream =
   NitroModules.createHybridObject<ZlibStream>('ZlibStream')
+export const zlib = NitroModules.createHybridObject<Zlib>('Zlib')

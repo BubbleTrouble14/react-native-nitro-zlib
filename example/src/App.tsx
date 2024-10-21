@@ -4,6 +4,7 @@ import { HybridObjectTestsScreen } from './screens/HybridObjectTestsScreen'
 import { zlib } from 'react-native-nitro-zlib'
 
 export default function App() {
+  console.log(zlib.version)
   React.useEffect(() => {
     function testZlibStreams() {
       // Create a larger, more compressible dataset
@@ -43,7 +44,7 @@ export default function App() {
         }
 
         console.log('Starting decompression process...')
-        decompressWithInflateStream()
+        // decompressWithInflateStream()
       })
 
       deflateStream.onError((error: Error) => {
@@ -55,60 +56,59 @@ export default function App() {
       console.log('Ending deflate stream...')
       deflateStream.end()
 
-      function decompressWithInflateStream() {
-        if (!compressedData) {
-          console.error('No compressed data to decompress')
-          return
-        }
+      // function decompressWithInflateStream() {
+      //   if (!compressedData) {
+      //     console.error('No compressed data to decompress')
+      //     return
+      //   }
 
-        console.log('Creating inflate stream...')
-        const inflateStream = zlib.createInflateStream()
+      //   console.log('Creating inflate stream...')
+      //   const inflateStream = zlib.createInflateStream()
 
-        inflateStream.onData((chunk: ArrayBuffer) => {
-          console.log('Received decompressed chunk of size:', chunk.byteLength)
-          const chunkArray = new Uint8Array(chunk)
-          decompressedData = decompressedData
-            ? new Uint8Array([...decompressedData, ...chunkArray])
-            : chunkArray
-        })
+      //   inflateStream.onData((chunk: ArrayBuffer) => {
+      //     console.log('Received decompressed chunk of size:', chunk.byteLength)
+      //     const chunkArray = new Uint8Array(chunk)
+      //     decompressedData = decompressedData
+      //       ? new Uint8Array([...decompressedData, ...chunkArray])
+      //       : chunkArray
+      //   })
 
-        inflateStream.onEnd(() => {
-          console.log('Inflate stream ended')
-          if (decompressedData) {
-            console.log(
-              'Decompressed data size:',
-              decompressedData.length,
-              'bytes'
-            )
+      //   inflateStream.onEnd(() => {
+      //     console.log('Inflate stream ended')
+      //     if (decompressedData) {
+      //       console.log(
+      //         'Decompressed data size:',
+      //         decompressedData.length,
+      //         'bytes'
+      //       )
 
-            const isSuccessful =
-              decompressedData.length === originalData.length &&
-              decompressedData.every((byte, i) => byte === originalData[i])
-            console.log('Decompression successful:', isSuccessful)
+      //       const isSuccessful =
+      //         decompressedData.length === originalData.length &&
+      //         decompressedData.every((byte, i) => byte === originalData[i])
+      //       console.log('Decompression successful:', isSuccessful)
 
-            if (!isSuccessful) {
-              console.error('Decompressed data does not match original data')
-            }
-          } else {
-            console.error('No decompressed data produced')
-          }
-        })
+      //       if (!isSuccessful) {
+      //         console.error('Decompressed data does not match original data')
+      //       }
+      //     } else {
+      //       console.error('No decompressed data produced')
+      //     }
+      //   })
 
-        inflateStream.onError((error: Error) => {
-          console.error('Inflate stream error:', error)
-        })
+      //   inflateStream.onError((error: Error) => {
+      //     console.error('Inflate stream error:', error)
+      //   })
 
-        console.log('Writing compressed data to inflate stream...')
-        inflateStream.write(compressedData.buffer)
-        console.log('Ending inflate stream...')
-        inflateStream.end()
-      }
+      //   console.log('Writing compressed data to inflate stream...')
+      //   inflateStream.write(compressedData.buffer)
+      //   console.log('Ending inflate stream...')
+      //   inflateStream.end()
+      // }
     }
 
-    console.log('Starting Zlib stream test...')
     testZlibStreams()
-    console.log('Zlib stream test initiated. Waiting for results...')
   }, [])
+
   return (
     <SafeAreaProvider>
       <HybridObjectTestsScreen />

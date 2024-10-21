@@ -14,9 +14,7 @@ namespace margelo::nitro::rnzlib
     class HybridZlibStream : public HybridZlibStreamSpec
     {
     public:
-        HybridZlibStream();
-        explicit HybridZlibStream(int level, bool deflate);
-        ~HybridZlibStream() override;
+        HybridZlibStream() : HybridObject(TAG) {}
 
         bool write(const std::shared_ptr<ArrayBuffer> &chunk) override;
         void end() override;
@@ -28,9 +26,20 @@ namespace margelo::nitro::rnzlib
         void reset() override;
         double getMemorySize() override;
 
+        static std::shared_ptr<HybridZlibStream> create(int level, bool deflate)
+        {
+            Logger::log(LogLevel::Debug, "HybridZlibStream", "Creating HybridZlibStream: level = %d, deflate = %d", level, deflate);
+            auto instance = std::make_shared<HybridZlibStream>();
+            instance->_deflate = deflate;
+            instance->initStream(level, deflate);
+            return instance;
+        }
+
     private:
         void initStream(int level, bool deflate);
+        void processOutput(int ret);
         std::shared_ptr<ArrayBuffer> createArrayBuffer(size_t size);
+        void reportError(const std::string &message);
 
         std::unique_ptr<z_stream> _zstream;
         bool _deflate;

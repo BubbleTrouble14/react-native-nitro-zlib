@@ -2,88 +2,80 @@
 #include <zlib.h>
 #include <vector>
 #include <stdexcept>
+#include <NitroModules/NitroLogger.hpp>
 
 namespace margelo::nitro::rnzlib
 {
 
-    HybridZlibStream::HybridZlibStream()
-        : HybridObject(TAG), _zstream(nullptr), _deflate(true), _initialized(false), _outBuffer(CHUNK_SIZE)
-    {
-        Logger::log(LogLevel::Debug, TAG, "HybridZlibStream default constructor called");
-    }
-
-    HybridZlibStream::HybridZlibStream(int level, bool deflate)
-        : HybridObject(TAG), _zstream(nullptr), _deflate(deflate), _initialized(false), _outBuffer(CHUNK_SIZE)
-    {
-        Logger::log(LogLevel::Debug, TAG, "HybridZlibStream parameterized constructor called with level %d, deflate %d", level, deflate);
-        initStream(level, deflate);
-    }
-
     void HybridZlibStream::initStream(int level, bool deflate)
     {
+        Logger::log(LogLevel::Debug, "HybridZlibStream", "Initializing stream: level = %d, deflate = %d", level, deflate);
+
         if (_initialized)
         {
-            return;
+            Logger::log(LogLevel::Debug, "HybridZlibStream", "Stream already initialized, resetting");
+            if (_zstream)
+            {
+                if (_deflate)
+                    deflateEnd(_zstream.get());
+                else
+                    inflateEnd(_zstream.get());
+            }
         }
 
         _zstream = std::make_unique<z_stream>();
-        _zstream->zalloc = Z_NULL;
-        _zstream->zfree = Z_NULL;
-        _zstream->opaque = Z_NULL;
+        memset(_zstream.get(), 0, sizeof(z_stream));
 
-        int ret;
-        if (deflate)
-        {
-            ret = deflateInit(_zstream.get(), level);
-        }
-        else
-        {
-            ret = inflateInit(_zstream.get());
-        }
-
+        int ret = deflate ? deflateInit(_zstream.get(), level) : inflateInit(_zstream.get());
         if (ret != Z_OK)
         {
+            Logger::log(LogLevel::Error, "HybridZlibStream", "Failed to initialize zlib stream: %d", ret);
             _zstream.reset();
-            throw std::runtime_error("Failed to initialize zlib stream");
+            reportError("Failed to initialize zlib stream");
+            _initialized = false;
+            return;
         }
 
         _initialized = true;
+        _deflate = deflate;
+        Logger::log(LogLevel::Debug, "HybridZlibStream", "Stream initialized successfully. Initialized: %d, Deflate: %d", _initialized, _deflate);
     }
 
-    HybridZlibStream::~HybridZlibStream()
+    void HybridZlibStream::reportError(const std::string &message)
     {
-        if (_initialized)
+        if (_errorCallback)
         {
-            if (_deflate)
-            {
-                deflateEnd(_zstream.get());
-            }
-            else
-            {
-                inflateEnd(_zstream.get());
-            }
+            Error error{"ZlibError", message, std::nullopt};
+            _errorCallback(error);
         }
     }
 
     bool HybridZlibStream::write(const std::shared_ptr<ArrayBuffer> &chunk)
     {
-        if (!_initialized)
+        Logger::log(LogLevel::Debug, "HybridZlibStream", "Write called. Initialized: %d, Deflate: %d", _initialized, _deflate);
+
+        if (!_initialized || !_zstream)
         {
-            initStream(Z_DEFAULT_COMPRESSION, _deflate);
+            reportError("Stream not initialized");
+            return false;
         }
 
-        if (chunk->size() == 0)
+        if (!chunk || chunk->size() == 0)
+        {
+            Logger::log(LogLevel::Debug, "HybridZlibStream", "Empty chunk, returning");
             return true;
+        }
+
+        Logger::log(LogLevel::Debug, "HybridZlibStream", "Writing chunk of size: %zu", chunk->size());
 
         _zstream->avail_in = static_cast<uInt>(chunk->size());
         _zstream->next_in = static_cast<Bytef *>(chunk->data());
 
-        std::vector<uint8_t> outBuffer(chunk->size() * 2); // Output buffer size estimation
-
         do
         {
-            _zstream->avail_out = static_cast<uInt>(outBuffer.size());
-            _zstream->next_out = outBuffer.data();
+            _outBuffer.resize(CHUNK_SIZE);
+            _zstream->avail_out = static_cast<uInt>(_outBuffer.size());
+            _zstream->next_out = _outBuffer.data();
 
             int ret = _deflate ? deflate(_zstream.get(), Z_NO_FLUSH) : inflate(_zstream.get(), Z_NO_FLUSH);
 
@@ -92,11 +84,17 @@ namespace margelo::nitro::rnzlib
                 throw std::runtime_error("Z_STREAM_ERROR: inconsistent stream state");
             }
 
-            unsigned have = static_cast<unsigned>(outBuffer.size()) - _zstream->avail_out;
-            if (have > 0)
+            if (ret == Z_BUF_ERROR && _zstream->avail_in == 0)
+            {
+                // If Z_BUF_ERROR occurs and there's no input left, it might mean we need more output space.
+                break;
+            }
+
+            unsigned have = static_cast<unsigned>(_outBuffer.size()) - _zstream->avail_out;
+            if (have > 0 && _dataCallback)
             {
                 uint8_t *buffer = new uint8_t[have];
-                std::memcpy(buffer, outBuffer.data(), have);
+                std::memcpy(buffer, _outBuffer.data(), have);
                 auto outChunk = std::make_shared<NativeArrayBuffer>(buffer, have, [=]()
                                                                     { delete[] buffer; });
                 _dataCallback(outChunk);
@@ -106,30 +104,76 @@ namespace margelo::nitro::rnzlib
         return _zstream->avail_in == 0;
     }
 
+    void HybridZlibStream::processOutput(int ret)
+    {
+        if (ret == Z_STREAM_ERROR)
+        {
+            reportError("Z_STREAM_ERROR: inconsistent stream state");
+            return;
+        }
+
+        unsigned have = static_cast<unsigned>(_outBuffer.size()) - _zstream->avail_out;
+        if (have > 0 && _dataCallback)
+        {
+            auto outChunk = std::make_shared<NativeArrayBuffer>(_outBuffer.data(), have, [=]()
+                                                                { delete[] _outBuffer.data(); });
+            _dataCallback(outChunk);
+        }
+    }
+
     void HybridZlibStream::end()
     {
-        std::vector<uint8_t> outBuffer(16384); // 16KB buffer
 
+        Logger::log(LogLevel::Debug, "HybridZlibStream", "End called. Initialized: %d, Deflate: %d", _initialized, _deflate);
+
+        if (!_initialized || !_zstream)
+        {
+            reportError("Stream not initialized or already ended");
+            return;
+        }
+
+        _outBuffer.resize(CHUNK_SIZE);
         int ret;
         do
         {
-            _zstream->avail_out = static_cast<uInt>(outBuffer.size());
-            _zstream->next_out = outBuffer.data();
+            _zstream->avail_out = static_cast<uInt>(_outBuffer.size());
+            _zstream->next_out = _outBuffer.data();
 
             ret = _deflate ? deflate(_zstream.get(), Z_FINISH) : inflate(_zstream.get(), Z_FINISH);
 
-            unsigned have = static_cast<unsigned>(outBuffer.size()) - _zstream->avail_out;
-            if (have > 0)
+            if (ret == Z_STREAM_ERROR)
             {
-                uint8_t *buffer = new uint8_t[have];
-                std::memcpy(buffer, outBuffer.data(), have);
-                auto outChunk = std::make_shared<NativeArrayBuffer>(buffer, have, [=]()
-                                                                    { delete[] buffer; });
+                reportError("Z_STREAM_ERROR: inconsistent stream state during end()");
+                break;
+            }
+
+            unsigned have = static_cast<unsigned>(_outBuffer.size()) - _zstream->avail_out;
+            if (have > 0 && _dataCallback)
+            {
+                auto outChunk = std::make_shared<NativeArrayBuffer>(_outBuffer.data(), have, [=]() { /* No need to delete _outBuffer, it's reused */ });
                 _dataCallback(outChunk);
             }
         } while (ret != Z_STREAM_END);
 
-        _endCallback();
+        // Clean up
+        if (_deflate)
+        {
+            deflateEnd(_zstream.get());
+        }
+        else
+        {
+            inflateEnd(_zstream.get());
+        }
+
+        _zstream.reset();
+        _initialized = false;
+
+        if (_endCallback)
+        {
+            _endCallback();
+        }
+
+        Logger::log(LogLevel::Debug, "HybridZlibStream", "Stream ended successfully");
     }
 
     void HybridZlibStream::flush(std::optional<double> kind)
