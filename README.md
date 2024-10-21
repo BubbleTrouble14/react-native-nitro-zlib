@@ -1,5 +1,3 @@
-Certainly! Here's the raw markdown for you to copy directly into a .md file:
-
 # React Native Nitro Zlib
 
 React Native implementation of Zlib compression library. It's written in TypeScript and has direct bindings to a Zlib C++ library. The primary function of this implementation is to provide fast and efficient compression and decompression capabilities.
