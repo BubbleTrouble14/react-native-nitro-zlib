@@ -1,0 +1,3 @@
+[submodule "packages/react-native-nitro-zlib/zlib_cpp"]
+	path = packages/react-native-nitro-zlib/zlib_cpp
+	url = https://github.com/BubbleTrouble14/zlib_cpp.git
