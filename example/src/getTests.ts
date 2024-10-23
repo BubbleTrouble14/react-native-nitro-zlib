@@ -1,7 +1,14 @@
 import type { State } from './Testers'
 import { it } from './Testers'
 import { stringify } from './utils'
-import type { Zlib, ZlibOptions, ZlibStream } from 'react-native-nitro-zlib'
+import {
+  ZlibCompressionLevel,
+  ZlibFlush,
+  ZlibStrategy,
+  type Zlib,
+  type ZlibOptions,
+  type ZlibStream,
+} from 'react-native-nitro-zlib'
 
 type TestResult =
   | {
@@ -100,7 +107,7 @@ async function testStreamPair(
 export function getTests(zlib: Zlib): TestRunner[] {
   const testOptions: ZlibOptions[] = [
     {},
-    { level: 6 },
+    { level: 9 },
     { chunkSize: 16384 },
     { level: 9, strategy: 0, windowBits: 15 },
   ]
@@ -141,7 +148,9 @@ export function getTests(zlib: Zlib): TestRunner[] {
           const originalBuffer = stringToArrayBuffer(original)
 
           return it(async () => {
-            const compressed = await zlib.deflate(originalBuffer, options)
+            const compressed = await zlib.deflate(originalBuffer, {
+              ...options,
+            })
             const decompressed = await zlib.inflate(compressed, options)
             return arrayBufferToString(decompressed) === original
           })
@@ -233,193 +242,230 @@ export function getTests(zlib: Zlib): TestRunner[] {
         const compressed = await zlib.compress(buffer)
         const end = performance.now()
 
-        return {
+        return JSON.stringify({
           originalSize: buffer.byteLength,
           compressedSize: compressed.byteLength,
           ratio: compressed.byteLength / buffer.byteLength,
           timeMs: end - start,
+        })
+      })
+    }),
+
+    // Comprehensive stream tests
+    createTest('deflate/inflate stream pair works correctly', async () => {
+      const original = generateTestData()
+      const originalBuffer = stringToArrayBuffer(original)
+
+      return it(async () => {
+        const deflateStream = zlib.createDeflateStream()
+        const inflateStream = zlib.createInflateStream()
+        return testStreamPair(deflateStream, inflateStream, originalBuffer)
+      })
+    }),
+
+    createTest('gzip/gunzip stream pair works correctly', async () => {
+      const original = generateTestData()
+      const originalBuffer = stringToArrayBuffer(original)
+
+      return it(async () => {
+        const gzipStream = zlib.createGzipStream()
+        const gunzipStream = zlib.createGunzipStream()
+        return testStreamPair(gzipStream, gunzipStream, originalBuffer)
+      })
+    }),
+
+    createTest(
+      'deflateRaw/inflateRaw stream pair works correctly',
+      async () => {
+        const original = generateTestData()
+        const originalBuffer = stringToArrayBuffer(original)
+
+        return it(async () => {
+          const deflateRawStream = zlib.createDeflateRawStream()
+          const inflateRawStream = zlib.createInflateRawStream()
+          return testStreamPair(
+            deflateRawStream,
+            inflateRawStream,
+            originalBuffer
+          )
+        })
+      }
+    ),
+
+    createTest('stream with different chunk sizes', async () => {
+      const original = generateTestData(10000) // Larger test data
+      const originalBuffer = stringToArrayBuffer(original)
+
+      return it(async () => {
+        const results = await Promise.all(
+          [1024, 4096, 16384].map(async (chunkSize) => {
+            const deflateStream = zlib.createDeflateStream({ chunkSize })
+            const inflateStream = zlib.createInflateStream({ chunkSize })
+            return testStreamPair(deflateStream, inflateStream, originalBuffer)
+          })
+        )
+        return results.every((result) => result === true)
+      })
+    }),
+
+    // Test different windowBits values
+    ...[8, 9, 15].map((windowBits) =>
+      createTest(`windowBits=${windowBits} works correctly`, async () => {
+        const original = generateTestData()
+        const originalBuffer = stringToArrayBuffer(original)
+
+        return it(async () => {
+          const compressed = await zlib.deflate(originalBuffer, { windowBits })
+          const decompressed = await zlib.inflate(compressed, { windowBits })
+          return arrayBufferToString(decompressed) === original
+        })
+      })
+    ),
+
+    // Test different memLevel values
+    ...[1, 4, 8, 9].map((memLevel) =>
+      createTest(`memLevel=${memLevel} works correctly`, async () => {
+        const original = generateTestData()
+        const originalBuffer = stringToArrayBuffer(original)
+
+        return it(async () => {
+          const compressed = await zlib.deflate(originalBuffer, { memLevel })
+          const decompressed = await zlib.inflate(compressed)
+          return arrayBufferToString(decompressed) === original
+        })
+      })
+    ),
+
+    // Test all strategy types
+    ...Object.values(ZlibStrategy).map((strategy) =>
+      createTest(`strategy=${strategy} works correctly`, async () => {
+        const original = generateTestData()
+        const originalBuffer = stringToArrayBuffer(original)
+
+        return it(async () => {
+          const compressed = await zlib.deflate(originalBuffer, { strategy })
+          const decompressed = await zlib.inflate(compressed)
+          return arrayBufferToString(decompressed) === original
+        })
+      })
+    ),
+
+    // Test different flush modes
+    ...Object.values(ZlibFlush).map((flush) =>
+      createTest(`flush mode ${flush} works correctly`, async () => {
+        const original = generateTestData()
+        const originalBuffer = stringToArrayBuffer(original)
+
+        return it(async () => {
+          const stream = zlib.createDeflateStream({ flush })
+          const compressed = await testStream(stream, originalBuffer)
+          const decompressed = await zlib.inflate(compressed)
+          return arrayBufferToString(decompressed) === original
+        })
+      })
+    ),
+
+    // Test stream error handling
+    createTest('stream handles write after end', async () => {
+      const stream = zlib.createDeflateStream()
+
+      return it(async () => {
+        stream.end()
+        try {
+          stream.write(new ArrayBuffer(10))
+          return false
+        } catch (error) {
+          return error instanceof Error
         }
       })
     }),
 
-    // // Comprehensive stream tests
-    // createTest('deflate/inflate stream pair works correctly', async () => {
-    //   const original = generateTestData()
-    //   const originalBuffer = stringToArrayBuffer(original)
+    // Test dictionary support
+    createTest('custom dictionary support', async () => {
+      const dictionary = stringToArrayBuffer('common dictionary text')
+      const original = generateTestData()
+      const originalBuffer = stringToArrayBuffer(original)
 
-    //   return it(async () => {
-    //     const deflateStream = zlib.createDeflateStream()
-    //     const inflateStream = zlib.createInflateStream()
-    //     return testStreamPair(deflateStream, inflateStream, originalBuffer)
-    //   })
-    // }),
+      return it(async () => {
+        const compressed = await zlib.deflate(originalBuffer, { dictionary })
+        const decompressed = await zlib.inflate(compressed, { dictionary })
+        return arrayBufferToString(decompressed) === original
+      })
+    }),
 
-    // createTest('gzip/gunzip stream pair works correctly', async () => {
-    //   const original = generateTestData()
-    //   const originalBuffer = stringToArrayBuffer(original)
+    // Test maxOutputLength option
+    createTest('maxOutputLength limit handling', async () => {
+      const original = generateTestData(1000000) // Large data
+      const originalBuffer = stringToArrayBuffer(original)
 
-    //   return it(async () => {
-    //     const gzipStream = zlib.createGzipStream()
-    //     const gunzipStream = zlib.createGunzipStream()
-    //     return testStreamPair(gzipStream, gunzipStream, originalBuffer)
-    //   })
-    // }),
+      return it(async () => {
+        try {
+          await zlib.inflate(originalBuffer, { maxOutputLength: 100 })
+          return false
+        } catch (error) {
+          return error instanceof Error
+        }
+      })
+    }),
 
-    // createTest(
-    //   'deflateRaw/inflateRaw stream pair works correctly',
-    //   async () => {
-    //     const original = generateTestData()
-    //     const originalBuffer = stringToArrayBuffer(original)
+    // Test stream concatenation
+    createTest('handle concatenated streams', async () => {
+      const data1 = generateTestData(100)
+      const data2 = generateTestData(100)
+      const buffer1 = stringToArrayBuffer(data1)
+      const buffer2 = stringToArrayBuffer(data2)
 
-    //     return it(async () => {
-    //       const deflateRawStream = zlib.createDeflateRawStream()
-    //       const inflateRawStream = zlib.createInflateRawStream()
-    //       return testStreamPair(
-    //         deflateRawStream,
-    //         inflateRawStream,
-    //         originalBuffer
-    //       )
-    //     })
-    //   }
-    // ),
+      return it(async () => {
+        const stream = zlib.createDeflateStream()
+        const chunks: ArrayBuffer[] = []
 
-    // createTest('stream with different chunk sizes', async () => {
-    //   const original = generateTestData(10000) // Larger test data
-    //   const originalBuffer = stringToArrayBuffer(original)
+        await new Promise<void>((resolve) => {
+          stream.onData((chunk) => chunks.push(chunk))
+          stream.onEnd(resolve)
+          stream.write(buffer1)
+          stream.write(buffer2)
+          stream.end()
+        })
 
-    //   return it(async () => {
-    //     const results = await Promise.all(
-    //       [1024, 4096, 16384].map(async (chunkSize) => {
-    //         const deflateStream = zlib.createDeflateStream({ chunkSize })
-    //         const inflateStream = zlib.createInflateStream({ chunkSize })
-    //         return testStreamPair(deflateStream, inflateStream, originalBuffer)
-    //       })
-    //     )
-    //     return results.every((result) => result === true)
-    //   })
-    // }),
+        const compressed = new Uint8Array(
+          chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0)
+        )
+        let offset = 0
+        chunks.forEach((chunk) => {
+          compressed.set(new Uint8Array(chunk), offset)
+          offset += chunk.byteLength
+        }) 
+        const decompressed = await zlib.inflate(compressed.buffer)
+        return arrayBufferToString(decompressed) === data1 + data2
+      })
+    }),
 
-    // createTest('stream with different compression levels', async () => {
-    //   const original = generateTestData()
-    //   const originalBuffer = stringToArrayBuffer(original)
+    // Test params modification mid-stream
+    createTest('stream params modification', async () => {
+      const stream = zlib.createDeflateStream()
 
-    //   return it(async () => {
-    //     const results = await Promise.all(
-    //       [0, 3, 6, 9].map(async (level) => {
-    //         const deflateStream = zlib.createDeflateStream({ level })
-    //         const inflateStream = zlib.createInflateStream()
-    //         return testStreamPair(deflateStream, inflateStream, originalBuffer)
-    //       })
-    //     )
-    //     return results.every((result) => result === true)
-    //   })
-    // }),
+      return it(() => {
+        stream.params(
+          ZlibCompressionLevel.BEST_COMPRESSION,
+          ZlibStrategy.HUFFMAN_ONLY
+        )
+        return true // If no error thrown
+      })
+    }),
 
-    // createTest('stream error handling', async () => {
-    //   const invalidData = new ArrayBuffer(100)
+    // Test reset functionality
+    createTest('stream reset functionality', async () => {
+      const original = generateTestData()
+      const originalBuffer = stringToArrayBuffer(original)
+      const stream = zlib.createDeflateStream()
 
-    //   return it(async () => {
-    //     return new Promise<boolean>((resolve) => {
-    //       const inflateStream = zlib.createInflateStream()
-
-    //       inflateStream.onError((error) => {
-    //         resolve(error instanceof Error)
-    //       })
-
-    //       inflateStream.write(invalidData)
-    //       inflateStream.end()
-    //     })
-    //   })
-    // }),
-
-    // createTest('stream memory cleanup', async () => {
-    //   const original = generateTestData(1000)
-    //   const originalBuffer = stringToArrayBuffer(original)
-
-    //   return it(async () => {
-    //     const stream = zlib.createDeflateStream()
-    //     const initialMemory = stream.getMemorySize()
-
-    //     await testStream(stream, originalBuffer)
-    //     stream.reset()
-
-    //     const afterMemory = stream.getMemorySize()
-    //     return afterMemory <= initialMemory
-    //   })
-    // }),
-
-    // createTest('stream params modification', async () => {
-    //   const original = generateTestData()
-    //   const originalBuffer = stringToArrayBuffer(original)
-
-    //   return it(async () => {
-    //     const stream = zlib.createDeflateStream()
-    //     const results: boolean[] = []
-
-    //     // Test initial compression
-    //     const compressed1 = await testStream(stream, originalBuffer)
-    //     stream.reset()
-
-    //     // Change params and test again
-    //     stream.params(9, 2) // High compression, filtered strategy
-    //     const compressed2 = await testStream(stream, originalBuffer)
-
-    //     // Verify both compressions work and are different
-    //     const decompressed1 = await zlib.inflate(compressed1)
-    //     const decompressed2 = await zlib.inflate(compressed2)
-
-    //     results.push(arrayBufferToString(decompressed1) === original)
-    //     results.push(arrayBufferToString(decompressed2) === original)
-    //     results.push(compressed1.byteLength !== compressed2.byteLength) // Params change should affect output
-
-    //     return results.every((result) => result === true)
-    //   })
-    // }),
-
-    // createTest('stream with large data chunks', async () => {
-    //   const sizes = [100000, 500000, 1000000]
-
-    //   return it(async () => {
-    //     const results = await Promise.all(
-    //       sizes.map(async (size) => {
-    //         const original = generateTestData(size)
-    //         const originalBuffer = stringToArrayBuffer(original)
-
-    //         const deflateStream = zlib.createDeflateStream()
-    //         const inflateStream = zlib.createInflateStream()
-
-    //         return testStreamPair(deflateStream, inflateStream, originalBuffer)
-    //       })
-    //     )
-    //     return results.every((result) => result === true)
-    //   })
-    // }),
-
-    // createTest('unzip stream with multiple formats', async () => {
-    //   const original = generateTestData()
-    //   const originalBuffer = stringToArrayBuffer(original)
-
-    //   return it(async () => {
-    //     const unzipStream = zlib.createUnzipStream()
-    //     const results: boolean[] = []
-
-    //     // Test with gzip format
-    //     const gzipped = zlib.gzipSync(originalBuffer)
-    //     results.push(
-    //       arrayBufferToString(await testStream(unzipStream, gzipped)) ===
-    //         original
-    //     )
-
-    //     // Reset and test with deflate format
-    //     unzipStream.reset()
-    //     const deflated = zlib.deflateSync(originalBuffer)
-    //     results.push(
-    //       arrayBufferToString(await testStream(unzipStream, deflated)) ===
-    //         original
-    //     )
-
-    //     return results.every((result) => result === true)
-    //   })
-    // }),
+      return it(async () => {
+        await testStream(stream, originalBuffer)
+        stream.reset()
+        const secondResult = await testStream(stream, originalBuffer)
+        const decompressed = await zlib.inflate(secondResult)
+        return arrayBufferToString(decompressed) === original
+      })
+    }),
   ]
 }

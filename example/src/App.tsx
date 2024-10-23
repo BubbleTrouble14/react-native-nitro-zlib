@@ -1,13 +1,7 @@
 import * as React from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { HybridObjectTestsScreen } from './screens/HybridObjectTestsScreen'
-import { zlib, type ZlibOptions } from 'react-native-nitro-zlib'
-
-const options: ZlibOptions = {
-  chunkSize: 1024,
-  level: 3,
-  windowBits: 15,
-}
+import { zlib } from 'react-native-nitro-zlib'
 
 export default function App() {
   React.useEffect(() => {
